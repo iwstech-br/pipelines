@@ -20,9 +20,19 @@ node {
     }
     
     stage ('Interrompendo o Container') {
-        def command = 'docker stop ' + pom.artifactId
-        sh command || echo 'Nao existe container' 
-        sh 'docker rm ' + pom.artifactId
+    
+        sh 'docker ps | grep ' + pom.artifactId + ' > result'
+        def result = readFile('result').trim()
+        if(result.length > 0) {
+            sh 'docker stop ' + pom.artifactId
+        }
+        
+        sh 'docker ps -a | grep ' + pom.artifactId + ' > result'
+        def result = readFile('result').trim()
+        if(result.length > 0) {
+            sh 'docker rm ' + pom.artifactId
+        }
+        
     }        
     
     stage ('Atualizando a Imagem do Container') {
