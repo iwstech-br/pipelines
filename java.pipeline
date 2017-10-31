@@ -2,7 +2,10 @@ node {
     
     def mvn = tool 'MVN-3.3.9'
     def pom = null
-    
+    def hom = ${AMBIENTE}.contains('hom');
+    echo hom
+
+/*    
     stage ('Preparação') {
         git branch: 'develop', credentialsId: 'GITLAB', url: '${GIT_URL}'
         pom = readMavenPom file: 'pom.xml'
@@ -25,5 +28,5 @@ node {
         sh 'docker volume create ' + pom.artifactId + '-data'
         sh 'docker run --name ' + pom.artifactId + ' -p 8000:8000 -e ENVIRONMENT=prod -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':' + pom.version
     }
-
+*/
 }
