@@ -28,7 +28,7 @@ node {
         }
         
         sh 'docker ps -a | grep ' + pom.artifactId + ' > result'
-        def result = readFile('result').trim()
+        result = readFile('result').trim()
         if(result.length > 0) {
             sh 'docker rm ' + pom.artifactId
         }
