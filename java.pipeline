@@ -1,4 +1,4 @@
-node {
+node(AMBIENTE) {
     
     def hom = AMBIENTE.contains('hom');
     def mvn = tool 'MVN-3.3.9'
@@ -8,11 +8,7 @@ node {
         git branch: 'develop', credentialsId: 'GITLAB', url: '${GIT_URL}'
         pom = readMavenPom file: 'pom.xml'
     }
-    
-    stage ('Compilando e Testando') {
-        sh "${mvn}/bin/mvn clean package -Dmaven.test.skip=true"
-    }        
-    
+
     stage ('Preparando a Release') {
         if(hom) {
             echo 'Pulando a Release'
@@ -20,6 +16,10 @@ node {
             pom = readMavenPom file: 'pom.xml'
         }
     }
+    
+    stage ('Compilando e Testando') {
+        sh "${mvn}/bin/mvn clean package -Dmaven.test.skip=true"
+    }        
     
     stage ('Interrompendo o Container') {
     
