@@ -23,7 +23,7 @@ node {
     
     stage ('Iniciando a Aplicação') {
         sh 'docker volume create ' + pom.artifactId + '-data'
-        sh 'docker run --name ' + pom.artifactId + ' -p 8000:8000 -e ENVIRONMENT=prod -v ' + pom.artifactId + '-data:'/var/log/java -d ' + pom.artifactId + ':' + pom.version
+        sh 'docker run --name ' + pom.artifactId + ' -p 8000:8000 -e ENVIRONMENT=prod -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':' + pom.version
     }
 
 }
