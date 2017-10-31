@@ -1,0 +1,344 @@
+pipeline {
+    agent any
+    
+    environment {
+        grupo = "${env.GROUP}"
+        projeto = "${env.PROJECT}"
+        repositorio = "gitlab.dpf.gov.br/${env.GROUP}/${env.PROJECT}.git"
+    }
+
+stages {
+      
+        stage ('Construção e Testes') {
+            steps {
+                // Define as variáveis de ambiente opcionais
+                script {
+                    env.usuarios=""
+                    env.deployPrehom="1"
+                    env.deployHomologacao="1"
+                    env.branchRelease="master"
+                    env.nomeProjeto=projeto + "_"
+                    env.releaseSonar=true
+                    env.releaseDocumentacao=false
+                    env.releaseGitflow="0"
+                    env.profileMaven=""
+                    env.pularTestes="0"
+                    env.nextVersion = ""
+                    env.quemAprovouPrehom = ""
+                    env.quemAprovouHom = ""
+                    
+                    env.enviaEmailHomologacao=false
+
+                    if(env.USERS) {
+                        env.usuarios=env.USERS
+                    }
+                    if(env.PREHOM) {
+                        env.deployPrehom=env.PREHOM
+                    }
+                    if(env.HOMOLOGACAO) {
+                        env.deployHomologacao=env.HOMOLOGACAO
+                    }
+                    if(env.BRANCH) {
+                        env.branchRelease=env.BRANCH
+                    }
+                    if(env.NEXT_VERSION) {
+                        env.nextVersion=env.NEXT_VERSION
+                    }
+                    if(env.USAR_PROJETO_NOME_JOB == "0") {
+                        env.nomeProjeto=""
+                    }
+                    if(env.RELEASE_SONAR == "0") {
+                        env.releaseSonar=false
+                    }
+                    if(env.RELEASE_DOCUMENTACAO == "1") {
+                        env.releaseDocumentacao=true
+                    }
+                    if(env.RELEASE_GITFLOW == "1") {
+                        env.releaseGitflow="1"
+                    }
+                    if(env.PROFILE_MAVEN) {
+                        env.profileMaven=env.PROFILE_MAVEN
+                    }
+                    if(env.PULAR_TESTES == "1") {
+                        env.pularTestes = "1"
+                    }
+
+                    if(ALTERACAO_FORMULARIO == "true") {
+                        env.enviaEmailHomologacao=true    
+                    }
+
+                    if(BUILD_EMERGENCIAL == "true" && NUMERO_INCIDENTE.trim() == "") {
+                        error message:'Para chamado emergencial, é necessário informar no número do incidente'
+                    }
+                    
+                    if(BUILD_EMERGENCIAL == "true" && JUSTIFICATIVA.trim() == "") {
+                        error message:'Para chamado emergencial, é necessário informar a justificativa'
+                    }
+
+                    if(ALTERACAO_FORMULARIO == "true" && LINK_FORMULARIO.trim() == "") {
+                        error message:'Quando existe alteração de formulário, é necessário informar o link do formulário no Wiki'
+                    }
+                }
+
+               rocketSend channel: 'cgti-releases', message: 'Iniciado pipeline do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, ' + usuarios, rawMessage: true
+  
+                echo RELEASE_VERSION
+                echo ALTERACAO_FORMULARIO
+                echo env.enviaEmailHomologacao
+                //build job: nomeProjeto + '_default', propagate: true
+                // por enquanto, essa fase não faz nada. Até que tenhamos definido como serão executados os testes
+            }
+        }
+
+        stage('Release') {
+            steps {
+                script {
+                    def r = true
+                    while (r) {
+                        try {
+                            // uma observação sobre os parâmetros booleanos
+                            // se esses parâmetros fosse definidos em uma seção
+                            // parameters, não seria necessário converter. Mas
+                            // todas as variáveis definidas em env são do tipo
+                            // String, assim é necessário converter.
+                            build job: nomeProjeto + 'release',
+                                parameters: [
+                                string(name: 'RELEASE_VERSION', value: RELEASE_VERSION), 
+                                string(name: 'NEXT_VERSION', value: nextVersion), 
+                                string(name: 'MENSAGEM_SCM', value: MENSAGEM_SCM),                                
+                                string(name: 'PULAR_TESTES', value: pularTestes),                                
+                                string(name: 'PROFILE_MAVEN', value: profileMaven),                                
+                                string(name: 'GROUP', value: grupo),                                
+                                string(name: 'PROJECT', value: projeto),                                
+                                string(name: 'BRANCH', value: branchRelease),                                
+                                string(name: 'GITFLOW', value: releaseGitflow),
+                                booleanParam(name: 'SONAR', value: releaseSonar.toBoolean()),
+                                booleanParam(name: 'DOCUMENTACAO', value: releaseDocumentacao.toBoolean())
+                                ],
+                                propagate: true
+                            r = false
+                        } catch (error) {
+                            rocketSend channel: 'cgti-releases', message: 'Erro no job release do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, ' + usuarios, rawMessage: true
+                            r = true
+                            input message: 'Job release falhou, executar novamente? ' + error
+                        }
+                    }
+                    
+                }    
+            }
+              
+        }
+  
+        stage('Pré-Homologação') {
+            when {
+                environment name: "deployPrehom", value: "1"
+            }
+            steps {
+                script {
+                    def r = true
+                    while (r) {
+                        try {
+                            build job: nomeProjeto + 'deploy_prehomologacao',
+                                parameters: [[$class: 'StringParameterValue',
+                                name: 'TARGET_VERSION',
+                                value: RELEASE_VERSION]],
+                                propagate: true
+                            r = false
+                        } catch (error) {
+                            rocketSend channel: 'cgti-releases', message: 'Erro de deploy no ambiente de pré-homologação do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, ' + usuarios, rawMessage: true
+                            r = true
+                            input message: 'Deploy pré-homologação falhou, executar novamente?'
+                        }
+                    }    
+                    
+                    rocketSend channel: 'cgti-releases', message: 'Deploy do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, no ambiente de pré-homologação' + ' ' + usuarios, rawMessage: true
+                    quemAprovouPrehom = input message: 'Homologa a versão de pré-homologação?',
+                        submitter: 'homologa_prehom',
+                        submitterParameter: 'who'
+
+                    if(deployHomologacao == "1") {
+                        if(env.enviaEmailHomologacao == "true") {
+                            build job:'/ferramentas/email_abertura_chamado_default',parameters: 
+                            [
+                               [$class: 'StringParameterValue', name: 'RELEASE_VERSION', value: RELEASE_VERSION],
+                               [$class: 'StringParameterValue', name: 'MENSAGEM_SCM', value: MENSAGEM_SCM],
+                               [$class: 'StringParameterValue', name: 'RISCOS_ADICIONAIS', value: RISCOS_ADICIONAIS],
+                               [$class: 'StringParameterValue', name: 'INSTRUCAO_ROLLBACK', value: INSTRUCAO_ROLLBACK],
+                               [$class: 'StringParameterValue', name: 'RELACIONAMENTO_MUDANCAS', value: RELACIONAMENTO_MUDANCAS],
+                               [$class: 'StringParameterValue', name: 'BUILD_EMERGENCIAL', value: BUILD_EMERGENCIAL],
+                               [$class: 'StringParameterValue', name: 'NUMERO_INCIDENTE', value: NUMERO_INCIDENTE],
+                               [$class: 'StringParameterValue', name: 'JUSTIFICATIVA', value: JUSTIFICATIVA],
+                               [$class: 'StringParameterValue', name: 'OBSERVACAO', value: OBSERVACAO],
+                               [$class: 'StringParameterValue', name: 'EMAIL', value: EMAIL],
+                               [$class: 'StringParameterValue', name: 'PROJECT_NAME', value: projeto],
+                               [$class: 'StringParameterValue', name: 'AMBIENTE', value: 'HOMOLOGACAO'],
+                               [$class: 'StringParameterValue', name: 'PIPELINE', value: BUILD_URL],
+                               [$class: 'StringParameterValue', name: 'ALTERACAO_FORMULARIO', value: ALTERACAO_FORMULARIO],
+                               [$class: 'StringParameterValue', name: 'APROVADOR', value: quemAprovouPrehom],
+                               [$class: 'StringParameterValue', name: 'LINK_FORMULARIO', value: LINK_FORMULARIO]
+                            ];
+                        } else {
+                            build job:'/ferramentas/email_informacao_deploy',parameters: 
+                            [
+                               [$class: 'StringParameterValue', name: 'OBSERVACAO', value: OBSERVACAO],
+                               [$class: 'StringParameterValue', name: 'EMAIL', value: EMAIL],
+                               [$class: 'StringParameterValue', name: 'PROJECT_NAME', value: projeto],
+                               [$class: 'StringParameterValue', name: 'AMBIENTE', value: 'HOMOLOGACAO'],
+                               [$class: 'StringParameterValue', name: 'PIPELINE', value: BUILD_URL],
+                               [$class: 'StringParameterValue', name: 'APROVADOR', value: quemAprovouPrehom]
+                            ];
+                        }
+                    }
+                }
+                
+            }
+        }
+
+        stage('Homologação') {
+            when {
+                environment name: "deployHomologacao", value: "1"
+            }
+            steps {
+                script {
+                    // se não foi executado o passo de homologação, tenho que enviar
+                    // o e-mail solicitando a publicação ou informando a publicação
+                    if(deployPrehom == "0") {
+                        if(env.enviaEmailHomologacao == "true") {
+                            build job:'/ferramentas/email_abertura_chamado_default',parameters: 
+                            [
+                               [$class: 'StringParameterValue', name: 'RELEASE_VERSION', value: RELEASE_VERSION],
+                               [$class: 'StringParameterValue', name: 'MENSAGEM_SCM', value: MENSAGEM_SCM],
+                               [$class: 'StringParameterValue', name: 'RISCOS_ADICIONAIS', value: RISCOS_ADICIONAIS],
+                               [$class: 'StringParameterValue', name: 'INSTRUCAO_ROLLBACK', value: INSTRUCAO_ROLLBACK],
+                               [$class: 'StringParameterValue', name: 'RELACIONAMENTO_MUDANCAS', value: RELACIONAMENTO_MUDANCAS],
+                               [$class: 'StringParameterValue', name: 'BUILD_EMERGENCIAL', value: BUILD_EMERGENCIAL],
+                               [$class: 'StringParameterValue', name: 'NUMERO_INCIDENTE', value: NUMERO_INCIDENTE],
+                               [$class: 'StringParameterValue', name: 'JUSTIFICATIVA', value: JUSTIFICATIVA],
+                               [$class: 'StringParameterValue', name: 'OBSERVACAO', value: OBSERVACAO],
+                               [$class: 'StringParameterValue', name: 'EMAIL', value: EMAIL],
+                               [$class: 'StringParameterValue', name: 'PROJECT_NAME', value: projeto],
+                               [$class: 'StringParameterValue', name: 'AMBIENTE', value: 'HOMOLOGACAO'],
+                               [$class: 'StringParameterValue', name: 'PIPELINE', value: BUILD_URL],
+                               [$class: 'StringParameterValue', name: 'ALTERACAO_FORMULARIO', value: ALTERACAO_FORMULARIO],
+                               [$class: 'StringParameterValue', name: 'LINK_FORMULARIO', value: LINK_FORMULARIO]
+                            ];  
+                        } else {
+                            build job:'/ferramentas/email_informacao_deploy',parameters: 
+                            [
+                               [$class: 'StringParameterValue', name: 'OBSERVACAO', value: OBSERVACAO],
+                               [$class: 'StringParameterValue', name: 'EMAIL', value: EMAIL],
+                               [$class: 'StringParameterValue', name: 'PROJECT_NAME', value: projeto],
+                               [$class: 'StringParameterValue', name: 'AMBIENTE', value: 'HOMOLOGACAO'],
+                               [$class: 'StringParameterValue', name: 'PIPELINE', value: BUILD_URL]
+                            ];
+                        }
+                    }                    
+                    // se preciso enviar e-mail para deploy, pergunto antes para
+                    // a infra
+                    if(env.enviaEmailHomologacao == "true") {
+                        input message: 'Executa deploy em homologação?', submitter: 'infra'
+                    }
+                }
+
+                script {
+                    def r = true
+                    while (r) {
+                        try {
+                            build job: nomeProjeto + 'deploy_homologacao',
+                                parameters: [[$class: 'StringParameterValue',
+                                name: 'TARGET_VERSION',
+                                value: RELEASE_VERSION]],
+                                propagate: true
+                            echo "stage HOM - deploy"
+                            r = false
+                        } catch (error) {
+                            rocketSend channel: 'cgti-releases', message: 'Erro de deploy no ambiente de homologação do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, '  + usuarios, rawMessage: true
+                            r = true
+                            input message: 'Deploy homologação falhou, executar novamente?', submitter: 'infra, gerente_sistema'
+                        }
+                    }
+                    
+                    rocketSend channel: 'cgti-releases', message: 'Deploy do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, no ambiente de homologação ' + usuarios, rawMessage: true
+                    quemAprovouHom = input message: 'Homologa a versão de homologação?',
+                        submitter: 'gerente_sistema',
+                        submitterParameter: 'who'
+                }
+
+
+                build job:'/ferramentas/email_abertura_chamado_default',parameters: 
+                [
+                   [$class: 'StringParameterValue', name: 'RELEASE_VERSION', value: RELEASE_VERSION],
+                   [$class: 'StringParameterValue', name: 'MENSAGEM_SCM', value: MENSAGEM_SCM],
+                   [$class: 'StringParameterValue', name: 'RISCOS_ADICIONAIS', value: RISCOS_ADICIONAIS],
+                   [$class: 'StringParameterValue', name: 'INSTRUCAO_ROLLBACK', value: INSTRUCAO_ROLLBACK],
+                   [$class: 'StringParameterValue', name: 'RELACIONAMENTO_MUDANCAS', value: RELACIONAMENTO_MUDANCAS],
+                   [$class: 'StringParameterValue', name: 'BUILD_EMERGENCIAL', value: BUILD_EMERGENCIAL],
+                   [$class: 'StringParameterValue', name: 'NUMERO_INCIDENTE', value: NUMERO_INCIDENTE],
+                   [$class: 'StringParameterValue', name: 'JUSTIFICATIVA', value: JUSTIFICATIVA],
+                   [$class: 'StringParameterValue', name: 'OBSERVACAO', value: OBSERVACAO],
+                   [$class: 'StringParameterValue', name: 'EMAIL', value: EMAIL],
+                   [$class: 'StringParameterValue', name: 'PROJECT_NAME', value: projeto],
+                   [$class: 'StringParameterValue', name: 'AMBIENTE', value: 'PRODUCAO'],
+                   [$class: 'StringParameterValue', name: 'PIPELINE', value: BUILD_URL],
+                   [$class: 'StringParameterValue', name: 'ALTERACAO_FORMULARIO', value: ALTERACAO_FORMULARIO],
+                   [$class: 'StringParameterValue', name: 'APROVADOR', value: quemAprovouHom],
+                   [$class: 'StringParameterValue', name: 'LINK_FORMULARIO', value: LINK_FORMULARIO]
+                ];  
+            }
+        }
+
+        stage('Produção') {
+            steps {
+                // se não foi executado o passo de homologação, tenho que enviar
+                // o e-mail solicitando a publicação
+                script {
+                    if(deployHomologacao == "0") {
+                        echo "Envia e-mail para deploy em produção"
+
+                        build job:'/ferramentas/email_abertura_chamado_default',parameters: 
+                        [
+                           [$class: 'StringParameterValue', name: 'RELEASE_VERSION', value: RELEASE_VERSION],
+                           [$class: 'StringParameterValue', name: 'MENSAGEM_SCM', value: MENSAGEM_SCM],
+                           [$class: 'StringParameterValue', name: 'RISCOS_ADICIONAIS', value: RISCOS_ADICIONAIS],
+                           [$class: 'StringParameterValue', name: 'INSTRUCAO_ROLLBACK', value: INSTRUCAO_ROLLBACK],
+                           [$class: 'StringParameterValue', name: 'RELACIONAMENTO_MUDANCAS', value: RELACIONAMENTO_MUDANCAS],
+                           [$class: 'StringParameterValue', name: 'BUILD_EMERGENCIAL', value: BUILD_EMERGENCIAL],
+                           [$class: 'StringParameterValue', name: 'NUMERO_INCIDENTE', value: NUMERO_INCIDENTE],
+                           [$class: 'StringParameterValue', name: 'JUSTIFICATIVA', value: JUSTIFICATIVA],
+                           [$class: 'StringParameterValue', name: 'OBSERVACAO', value: OBSERVACAO],
+                           [$class: 'StringParameterValue', name: 'EMAIL', value: EMAIL],
+                           [$class: 'StringParameterValue', name: 'PROJECT_NAME', value: projeto],
+                           [$class: 'StringParameterValue', name: 'AMBIENTE', value: 'PRODUCAO'],
+                           [$class: 'StringParameterValue', name: 'PIPELINE', value: BUILD_URL],
+                           [$class: 'StringParameterValue', name: 'ALTERACAO_FORMULARIO', value: ALTERACAO_FORMULARIO],
+                           [$class: 'StringParameterValue', name: 'APROVADOR', value: quemAprovouPrehom],                           
+                           [$class: 'StringParameterValue', name: 'LINK_FORMULARIO', value: LINK_FORMULARIO]
+                        ];
+
+                    }                    
+                }
+                
+                input message: 'Executa deploy em produção?', submitter: 'infra'
+                
+                script {
+                    def r = true
+                    while (r) {
+                        try {
+                            build job: nomeProjeto + 'deploy_producao',
+                                parameters: [[$class: 'StringParameterValue',
+                                name: 'TARGET_VERSION',
+                                value: RELEASE_VERSION]],
+                                propagate: true
+                            r = false
+                        } catch (error) {
+                            rocketSend channel: 'cgti-releases', message: 'Erro de deploy no ambiente de produção do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, ' + usuarios, rawMessage: true
+                            r = true
+                            input message: 'Deploy produção falhou, executar novamente?', submitter: 'infra'
+                        }
+                    }
+                }
+                rocketSend channel: 'cgti-releases', message: 'Deploy do projeto `' + projeto + '` , versão `' + RELEASE_VERSION + '`, no ambiente de produção ' + usuarios, rawMessage: true
+            }
+        }  
+    }
+}
