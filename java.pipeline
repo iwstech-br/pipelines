@@ -4,7 +4,7 @@ node {
     def mvn = tool 'MVN-3.3.9'
     def pom = null
 
-    stage ('Preparação') {
+    stage ('Preparando') {
         git branch: 'develop', credentialsId: 'GITLAB', url: '${GIT_URL}'
         pom = readMavenPom file: 'pom.xml'
     }
@@ -20,7 +20,8 @@ node {
     }
     
     stage ('Interrompendo o Container') {
-        sh 'docker stop ' + pom.artifactId
+        def command = 'docker stop ' + pom.artifactId
+        sh command || echo 'Nao existe container' 
         sh 'docker rm ' + pom.artifactId
     }        
     
@@ -28,7 +29,7 @@ node {
         sh 'docker build --build-arg BINARY_FILE=target/' + pom.artifactId + '.jar -t ' + pom.artifactId + ':' + pom.version + ' .'
     }        
     
-    stage ('Iniciando a Aplicação') {
+    stage ('Iniciando o Container') {
         sh 'docker volume create ' + pom.artifactId + '-data'
         sh 'docker run --name ' + pom.artifactId + ' -p 8000:8000 -e ENVIRONMENT=prod -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':' + pom.version
     }
