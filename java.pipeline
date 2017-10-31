@@ -1,15 +1,9 @@
 node {
     
+    def hom = AMBIENTE.contains('hom');
     def mvn = tool 'MVN-3.3.9'
     def pom = null
-    def hom = AMBIENTE.contains('hom');
-    if(hom) {
-        echo 'HOM'
-    } else {
-        echo 'PROD'
-    }
 
-/*    
     stage ('Preparação') {
         git branch: 'develop', credentialsId: 'GITLAB', url: '${GIT_URL}'
         pom = readMavenPom file: 'pom.xml'
@@ -19,12 +13,18 @@ node {
         sh "${mvn}/bin/mvn clean package -Dmaven.test.skip=true"
     }        
     
+    if(!hom) {
+        stage ('Preparando a Release') {
+            pom = readMavenPom file: 'pom.xml'
+        }
+    }
+    
     stage ('Interrompendo o Container') {
         sh 'docker stop ' + pom.artifactId
         sh 'docker rm ' + pom.artifactId
     }        
     
-    stage ('Atualizando o Container') {
+    stage ('Atualizando a Imagem do Container') {
         sh 'docker build --build-arg BINARY_FILE=target/' + pom.artifactId + '.jar -t ' + pom.artifactId + ':' + pom.version + ' .'
     }        
     
