@@ -3,7 +3,11 @@ node {
     def mvn = tool 'MVN-3.3.9'
     def pom = null
     def hom = AMBIENTE.contains('hom');
-    echo hom
+    if(hom) {
+        echo 'HOM'
+    } else {
+        echo 'PROD'
+    }
 
 /*    
     stage ('Preparação') {
