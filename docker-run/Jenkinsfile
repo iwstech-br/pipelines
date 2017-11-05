@@ -1,0 +1,40 @@
+def slave = AMBIENTE.contains('PRODUCAO') ? "master" : "hom01";
+def pom = null
+
+node() {
+
+    def mvn = tool 'MVN-3.3.9'
+    def BRANCH = AMBIENTE.contains('PRODUCAO') ? "master" : "develop"
+    
+    stage ('Preparando') {
+        git branch: 'develop', credentialsId: 'GITLAB', url: '${GITURL}'
+        pom = readMavenPom file: 'pom.xml'
+    }
+    
+    stage ('App Build') {
+        cleanWs()
+        build job: '/servicos/nexus_deploy', parameters: [
+            string(name: 'GITURL', value: String.valueOf(GITURL)), 
+            string(name: 'GITBRANCH', value: String.valueOf(BRANCH))
+        ]
+    }
+
+    stage ('Docker Build') {
+        build job: '/servicos/docker_build', parameters: [
+            string(name: 'GITURL', value: String.valueOf(DOCKERGITURL)), 
+            string(name: 'GROUPID', value: String.valueOf(pom.groupId)),
+            string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
+            string(name: 'VERSION', value: String.valueOf(pom.version))
+        ]
+    }
+    
+    stage ('Docker Run') {
+    
+        build job: '/servicos/docker_run', parameters: [
+            string(name: 'SLAVE', value: slave),
+            string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
+            string(name: 'VERSION', value: String.valueOf(pom.version))
+        ] 
+    }
+}
+
