@@ -1,5 +1,3 @@
-echo SLAVE
-
 node(SLAVE) {
     
     stage ('Interrompendo o Container') {

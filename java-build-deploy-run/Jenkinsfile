@@ -3,7 +3,7 @@ def pom = null
 node() {
 
     def mvn = tool 'MVN-3.3.9'
-    def BRANCH = AMBIENTE.contains('PRODUÇÃO') ? "master" : "develop"
+    def BRANCH = AMBIENTE.equals('PRODUÇÃO') ? 'master' : 'develop'
     
     stage ('Preparando') {
         git branch: 'develop', credentialsId: 'GITLAB', url: '${GITURL}'
@@ -29,7 +29,8 @@ node() {
     
     stage ('Docker Run') {
     
-        def slave = AMBIENTE.contains('PRODUÇÃO') ? "master" : "hom01";
+        echo AMBIENTE
+        def slave = AMBIENTE.equals('PRODUÇÃO') ? 'master' : 'hom01';
         echo slave
         build job: '/servicos/docker_run', parameters: [
             string(name: 'SLAVE', value: String.valueOf(slave)),
