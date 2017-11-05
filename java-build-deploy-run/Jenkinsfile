@@ -30,7 +30,7 @@ node() {
     stage ('Docker Run') {
     
         def slave = AMBIENTE.contains('PRODUÇÃO') ? "master" : "hom01";
-        echo '$slave'
+        echo slave
         build job: '/servicos/docker_run', parameters: [
             string(name: 'SLAVE', value: String.valueOf(slave)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
