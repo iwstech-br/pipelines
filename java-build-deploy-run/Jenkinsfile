@@ -30,8 +30,7 @@ node() {
     stage ('Docker Run') {
     
         echo AMBIENTE
-        def slave = AMBIENTE.equals('PRODUÇÃO') ? 'master' : 'hom01';
-        echo slave
+        def slave = AMBIENTE == 'PRODUÇÃO' ? 'master' : 'hom01';
         build job: '/servicos/docker_run', parameters: [
             string(name: 'SLAVE', value: String.valueOf(slave)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
