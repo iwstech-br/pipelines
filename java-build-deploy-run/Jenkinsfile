@@ -1,10 +1,5 @@
 def SLAVE = AMBIENTE.equals('PRODUCAO') ? 'master' : 'hom01'
 def BRANCH = AMBIENTE.equals('PRODUCAO') ? 'master' : 'develop'
-
-echo AMBIENTE
-echo SLAVE
-echo BRANCH
-/*
 def pom = null
 
 node() {
@@ -43,4 +38,3 @@ node() {
     }
 }
 
-*/
