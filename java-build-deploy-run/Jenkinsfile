@@ -1,4 +1,4 @@
-def slave = AMBIENTE.contains('PRODUCAO') ? "master" : "hom01";
+def slave = AMBIENTE.contains('PRODUÇÃO') ? "master" : "hom01";
 def pom = null
 
 node() {
