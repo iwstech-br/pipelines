@@ -1,3 +1,7 @@
+/*
+def SLAVE = AMBIENTE == 'PRODUÇÃO' ? 'master' : 'hom01'
+def BRANCH = AMBIENTE.equals('PRODUÇÃO') ? 'master' : 'develop'
+
 echo AMBIENTE
 if(AMBIENTE == 'PRODUÇÃO') {
     echo 'true'
@@ -9,18 +13,17 @@ if(AMBIENTE.equals('PRODUÇÃO')) {
 } else { 
     echo 'false'
 }
-
-def slave = AMBIENTE == 'PRODUÇÃO' ? 'master' : 'hom01';
-
+*/
+echo SLAVE
+echo BRANCH
 def pom = null
 
 node() {
 
     def mvn = tool 'MVN-3.3.9'
-    def BRANCH = AMBIENTE.equals('PRODUÇÃO') ? 'master' : 'develop'
     
     stage ('Preparando') {
-        git branch: 'develop', credentialsId: 'GITLAB', url: '${GITURL}'
+        git branch: '${BRANCH}', credentialsId: 'GITLAB', url: '${GITURL}'
         pom = readMavenPom file: 'pom.xml'
     }
     
@@ -44,7 +47,7 @@ node() {
     stage ('Docker Run') {
     
         build job: '/servicos/docker_run', parameters: [
-            string(name: 'SLAVE', value: String.valueOf(slave)),
+            string(name: 'SLAVE', value: String.valueOf(SLAVE)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
             string(name: 'VERSION', value: String.valueOf(pom.version))
         ] 
