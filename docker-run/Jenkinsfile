@@ -1,0 +1,24 @@
+node(SLAVE) {
+    
+    stage ('Interrompendo o Container') {
+    
+        sh 'docker ps > result'
+        def result = readFile('result').trim()
+        if(result.contains(ARTIFACTID)) {
+            sh 'docker stop ' + ARTIFACTID
+        }
+        
+        sh 'docker ps -a > result'
+        result = readFile('result').trim()
+        if(result.contains(ARTIFACTID)) {
+            sh 'docker rm ' + ARTIFACTID
+        }
+        
+    }        
+    
+    stage ('Iniciando o Container') {
+        sh 'docker volume create $ARTIFACTID-data'
+        sh 'docker run --name $ARTIFACTID -p 8000:8000 -e ENVIRONMENT=' + (SLAVE.equals("master") ? 'prod' : 'hom') + ' -v $ARTIFACTID-data:/var/log/java -d $ARTIFACTID:$VERSION'
+    }
+    
+}
