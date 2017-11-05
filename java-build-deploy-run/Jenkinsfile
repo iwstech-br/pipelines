@@ -1,10 +1,9 @@
-def slave = AMBIENTE.contains('PRODUÇÃO') ? "master" : "hom01";
 def pom = null
 
 node() {
 
     def mvn = tool 'MVN-3.3.9'
-    def BRANCH = AMBIENTE.contains('PRODUCAO') ? "master" : "develop"
+    def BRANCH = AMBIENTE.contains('PRODUÇÃO') ? "master" : "develop"
     
     stage ('Preparando') {
         git branch: 'develop', credentialsId: 'GITLAB', url: '${GITURL}'
@@ -30,8 +29,10 @@ node() {
     
     stage ('Docker Run') {
     
+        def slave = AMBIENTE.contains('PRODUÇÃO') ? "master" : "hom01";
+        echo '$slave'
         build job: '/servicos/docker_run', parameters: [
-            string(name: 'SLAVE', value: slave),
+            string(name: 'SLAVE', value: String.valueOf(slave)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
             string(name: 'VERSION', value: String.valueOf(pom.version))
         ] 
