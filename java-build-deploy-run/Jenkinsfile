@@ -1,6 +1,14 @@
 echo AMBIENTE
-echo String.valueOf(AMBIENTE == 'PRODUÇÃO')
-echo String.valueOf(AMBIENTE.equals('PRODUÇÃO'))
+if(AMBIENTE == 'PRODUÇÃO') {
+    echo 'true'
+} else { 
+    echo 'false'
+}
+if(AMBIENTE.equals('PRODUÇÃO')) {
+    echo 'true'
+} else { 
+    echo 'false'
+}
 
 def slave = AMBIENTE == 'PRODUÇÃO' ? 'master' : 'hom01';
 
