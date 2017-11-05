@@ -1,21 +1,10 @@
-/*
-def SLAVE = AMBIENTE == 'PRODUÇÃO' ? 'master' : 'hom01'
-def BRANCH = AMBIENTE.equals('PRODUÇÃO') ? 'master' : 'develop'
+def SLAVE = AMBIENTE.equals('PRODUCAO') ? 'master' : 'hom01'
+def BRANCH = AMBIENTE.equals('PRODUCAO') ? 'master' : 'develop'
 
 echo AMBIENTE
-if(AMBIENTE == 'PRODUÇÃO') {
-    echo 'true'
-} else { 
-    echo 'false'
-}
-if(AMBIENTE.equals('PRODUÇÃO')) {
-    echo 'true'
-} else { 
-    echo 'false'
-}
-*/
 echo SLAVE
 echo BRANCH
+/*
 def pom = null
 
 node() {
@@ -54,3 +43,4 @@ node() {
     }
 }
 
+*/
