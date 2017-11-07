@@ -33,7 +33,8 @@ node() {
         build job: '/servicos/docker_run', parameters: [
             string(name: 'SLAVE', value: String.valueOf(SLAVE)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
-            string(name: 'VERSION', value: String.valueOf(pom.version))
+            string(name: 'VERSION', value: String.valueOf(pom.version)),
+            string(name: 'PORTA', value: String.valueOf(PORTA))
         ] 
     }
 }
