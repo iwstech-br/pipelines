@@ -1,0 +1,20 @@
+def json = null
+
+node() {
+
+    stage ('Preparando') {
+        cleanWs()
+        git branch: String.valueOf(GITBRANCH), credentialsId: 'GITLAB', url: '${GITURL}'
+        json = readJSON file: 'package.json'
+    }
+    
+    stage ('App Build') {
+        
+        sh 'npm update'
+        sh 'npm run build'
+        sh 'zip -r ' + json.name + '.jar build'
+        sh 'mvn deploy -Dfile=' + json.name + '.jar -DgroupId=br.com.iwstech -DartifactId=' + json.name + ' -Dversion=' + json.version + ' -DrepositoryId=iwstech-m2'
+        
+    }
+}
+
