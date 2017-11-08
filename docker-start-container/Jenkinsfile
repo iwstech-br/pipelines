@@ -18,7 +18,7 @@ node(SLAVE) {
     
     stage ('Iniciando o Container') {
         sh 'docker volume create $ARTIFACTID-data'
-        sh 'docker run --name $ARTIFACTID -p ' + PORTA + ':8000 -e ENVIRONMENT=' + (SLAVE.equals('master') ? 'prod' : 'hom') + ' -v $ARTIFACTID-data:/var/log/java -d $ARTIFACTID:$VERSION'
+        sh 'docker run --name $ARTIFACTID -p ' + PORTA + ' -e ENVIRONMENT=' + (SLAVE.equals('master') ? 'prod' : 'hom') + ' -v $ARTIFACTID-data:/var/log/java -d $ARTIFACTID:$VERSION'
     }
     
 }
