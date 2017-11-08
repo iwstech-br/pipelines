@@ -8,7 +8,7 @@ node() {
         git branch: String.valueOf(BRANCH), credentialsId: 'GITLAB', url: '${GITURL}'
         json = readJSON file: 'package.json'
     }
-/*    
+
     stage ('App Build') {
         cleanWs()
         build job: '/servicos/react_build_deploy_nexus', parameters: [
@@ -16,7 +16,7 @@ node() {
             string(name: 'GITBRANCH', value: String.valueOf(BRANCH))
         ]
     }
-*/
+
     stage ('Docker Build') {
         build job: '/servicos/react_build_docker_image', parameters: [
             string(name: 'ARTIFACTID', value: String.valueOf(json.name)),

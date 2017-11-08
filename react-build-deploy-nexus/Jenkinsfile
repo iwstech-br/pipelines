@@ -23,7 +23,7 @@ node() {
         }
         
         sh 'npm run build'
-        sh 'zip -r ' + json.name + '.jar build'
+        sh 'zip -r ' + json.name + '.jar build/*'
         sh 'mvn deploy:deploy-file -Dfile=' + json.name + '.jar -DgroupId=br.com.iwstech -DartifactId=' + json.name + ' -Dversion=' + json.version + ' -DrepositoryId=iwstech-m2 -Durl=' + url
         
     }
