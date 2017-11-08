@@ -24,6 +24,7 @@ node() {
             string(name: 'GROUPID', value: String.valueOf(pom.groupId)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
             string(name: 'VERSION', value: String.valueOf(pom.version))
+            
         ]
     }
     
