@@ -1,4 +1,5 @@
 def json = null
+def url = 'http://nexus.iwstech.com.br/repository/maven-releases/'
 
 node() {
 
@@ -6,14 +7,24 @@ node() {
         cleanWs()
         git branch: String.valueOf(GITBRANCH), credentialsId: 'GITLAB', url: '${GITURL}'
         json = readJSON file: 'package.json'
+        if(json.version.contains('-SNAPSHOT')) {
+            url = 'http://nexus.iwstech.com.br/repository/maven-snapshots/'
+        }
     }
     
     stage ('App Build') {
         
-        sh 'npm update'
+        sh 'npm install'
+        
+        if(json.version.contains('-SNAPSHOT')) {
+            sh 'npm run stage-hom'
+        } else {
+            sh 'npm run stage-prod'
+        }
+        
         sh 'npm run build'
         sh 'zip -r ' + json.name + '.jar build'
-        sh 'mvn deploy -Dfile=' + json.name + '.jar -DgroupId=br.com.iwstech -DartifactId=' + json.name + ' -Dversion=' + json.version + ' -DrepositoryId=iwstech-m2'
+        sh 'mvn deploy:deploy-file -Dfile=' + json.name + '.jar -DgroupId=br.com.iwstech -DartifactId=' + json.name + ' -Dversion=' + json.version + ' -DrepositoryId=iwstech-m2 -Durl=' + url
         
     }
 }
