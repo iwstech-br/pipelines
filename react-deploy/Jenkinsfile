@@ -23,9 +23,8 @@ node() {
             string(name: 'VERSION', value: String.valueOf(json.version))
         ]
     }
-/*    
+
     stage ('Docker Run') {
-    
         build job: '/servicos/docker_start_container', parameters: [
             string(name: 'SLAVE', value: String.valueOf(SLAVE)),
             string(name: 'ARTIFACTID', value: String.valueOf(json.name)),
@@ -33,6 +32,6 @@ node() {
             string(name: 'PORTA', value: String.valueOf(PORTA))
         ] 
     }
-*/
+
 }
 
