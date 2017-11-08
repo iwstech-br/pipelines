@@ -13,14 +13,14 @@ node() {
     
     stage ('App Build') {
         cleanWs()
-        build job: '/servicos/springboot_deploy', parameters: [
+        build job: '/servicos/springboot_build_deploy_nexus', parameters: [
             string(name: 'GITURL', value: String.valueOf(GITURL)), 
             string(name: 'GITBRANCH', value: String.valueOf(BRANCH))
         ]
     }
 
     stage ('Docker Build') {
-        build job: '/servicos/springboot_build', parameters: [
+        build job: '/servicos/springboot_build_docker_image', parameters: [
             string(name: 'GROUPID', value: String.valueOf(pom.groupId)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
             string(name: 'VERSION', value: String.valueOf(pom.version))
@@ -29,7 +29,7 @@ node() {
     
     stage ('Docker Run') {
     
-        build job: '/servicos/docker_run', parameters: [
+        build job: '/servicos/docker_start_container', parameters: [
             string(name: 'SLAVE', value: String.valueOf(SLAVE)),
             string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
             string(name: 'VERSION', value: String.valueOf(pom.version)),
