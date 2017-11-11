@@ -17,9 +17,9 @@ node() {
         sh 'npm install'
         
         if(json.version.contains('-SNAPSHOT')) {
-            sh 'REACT_APP_HOST_ENV=hom npm start'
+            sh 'REACT_APP_HOST_ENV=hom npm build'
         } else {
-            sh 'REACT_APP_HOST_ENV=prod npm start'
+            sh 'REACT_APP_HOST_ENV=prod npm build'
         }
         
         sh 'zip -r ' + json.name + '.jar build/*'
