@@ -12,9 +12,7 @@ node(SLAVE) {
         result = readFile('result').trim()
         if(result.contains(ARTIFACTID)) {
             sh 'docker rm $ARTIFACTID'
-            sh 'docker rmi $ARTIFACTID:$VERSION'
         }
-        
     }        
     
     stage ('Iniciando o Container') {
