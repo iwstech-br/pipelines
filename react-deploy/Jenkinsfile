@@ -19,26 +19,26 @@ node(SLAVE) {
     }
 
     stage ('Docker Build') {
-        sh 'docker build --build-arg BUILD_FOLDER=build -t ' + pom.name + ':' + pom.version + ' .'
+        sh 'docker build --build-arg BUILD_FOLDER=build -t ' + json.name + ':' + json.version + ' .'
     }
 
     stage ('Interrompendo o Container') {
         sh 'docker ps > result'
         def result = readFile('result').trim()
-        if(result.contains(pom.name)) {
-            sh 'docker stop ' + pom.name
+        if(result.contains(json.name)) {
+            sh 'docker stop ' + json.name
         }
         
         sh 'docker ps -a > result'
         result = readFile('result').trim()
-        if(result.contains(pom.name)) {
-            sh 'docker rm ' + pom.name
+        if(result.contains(json.name)) {
+            sh 'docker rm ' + json.name
         }
     }        
     
     stage ('Iniciando o Container') {
-        sh 'docker volume create ' + pom.name + '-data'
-        sh 'docker run --name ' + pom.name + ' -p ' + PORTA + ' ' + pom.name + ':' + pom.version
+        sh 'docker volume create ' + json.name + '-data'
+        sh 'docker run --name ' + json.name + ' -p ' + PORTA + ' ' + json.name + ':' + json.version
     }
 
 }
