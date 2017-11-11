@@ -5,13 +5,14 @@ node(SLAVE) {
         sh 'docker ps > result'
         def result = readFile('result').trim()
         if(result.contains(ARTIFACTID)) {
-            sh 'docker stop ' + ARTIFACTID
+            sh 'docker stop $ARTIFACTID'
         }
         
         sh 'docker ps -a > result'
         result = readFile('result').trim()
         if(result.contains(ARTIFACTID)) {
-            sh 'docker rm ' + ARTIFACTID
+            sh 'docker rm $ARTIFACTID'
+            sh 'docker rmi $ARTIFACTID:$VERSION'
         }
         
     }        
