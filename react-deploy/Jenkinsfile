@@ -2,35 +2,43 @@ def SLAVE = AMBIENTE.equals('PRODUCAO') ? 'master' : 'hom01'
 def BRANCH = AMBIENTE.equals('PRODUCAO') ? 'master' : 'develop'
 def json = null
 
-node() {
+node(SLAVE) {
 
     stage ('Preparando') {
+        cleanWs()
         git branch: String.valueOf(BRANCH), credentialsId: 'GITLAB', url: '${GITURL}'
         json = readJSON file: 'package.json'
     }
 
     stage ('App Build') {
-        cleanWs()
-        build job: '/servicos/react_build_deploy_nexus', parameters: [
-            string(name: 'GITURL', value: String.valueOf(GITURL)), 
-            string(name: 'GITBRANCH', value: String.valueOf(BRANCH))
-        ]
+        sh 'npm install'
+        if(json.version.contains('-SNAPSHOT')) {
+            sh 'npm run set-beta'
+        }
+        sh 'npm run build'
     }
 
     stage ('Docker Build') {
-        build job: '/servicos/react_build_docker_image', parameters: [
-            string(name: 'ARTIFACTID', value: String.valueOf(json.name)),
-            string(name: 'VERSION', value: String.valueOf(json.version))
-        ]
+        sh 'docker build --build-arg BUILD_FOLDER=build -t ' + pom.name + ':' + pom.version + ' .'
     }
 
-    stage ('Docker Run') {
-        build job: '/servicos/docker_start_container', parameters: [
-            string(name: 'SLAVE', value: String.valueOf(SLAVE)),
-            string(name: 'ARTIFACTID', value: String.valueOf(json.name)),
-            string(name: 'VERSION', value: String.valueOf(json.version)),
-            string(name: 'PORTA', value: String.valueOf(PORTA))
-        ] 
+    stage ('Interrompendo o Container') {
+        sh 'docker ps > result'
+        def result = readFile('result').trim()
+        if(result.contains(pom.name)) {
+            sh 'docker stop ' + pom.name
+        }
+        
+        sh 'docker ps -a > result'
+        result = readFile('result').trim()
+        if(result.contains(pom.name)) {
+            sh 'docker rm ' + pom.name
+        }
+    }        
+    
+    stage ('Iniciando o Container') {
+        sh 'docker volume create ' + pom.name + '-data'
+        sh 'docker run --name ' + pom.name + ' -p ' + PORTA + ' ' + pom.name + ':' + pom.version
     }
 
 }
