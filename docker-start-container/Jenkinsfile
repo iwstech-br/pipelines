@@ -13,6 +13,12 @@ node(SLAVE) {
         if(result.contains(ARTIFACTID)) {
             sh 'docker rm $ARTIFACTID'
         }
+        
+        sh 'docker images | grep $ARTIFACTID > result'
+        result = readFile('result').trim()
+        if(result.contains(ARTIFACTID)) {
+            sh 'docker rmi hom.iwstech.com.br:5000/$ARTIFACTID:$VERSION'
+        }
     }        
     
     stage ('Iniciando o Container') {
