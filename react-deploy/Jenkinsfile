@@ -19,7 +19,7 @@ node(SLAVE) {
     }
 
     stage ('Docker Build') {
-        sh 'docker build --build-arg BUILD_FOLDER=build -t ' + json.name + ':' + json.version + ' .'
+        sh 'docker build --build-arg BUILD_FOLDER=build -t ' + json.name + ' .'
     }
 
     stage ('Interrompendo o Container') {
@@ -38,7 +38,7 @@ node(SLAVE) {
     
     stage ('Iniciando o Container') {
         sh 'docker volume create ' + json.name + '-data'
-        sh 'docker run --name ' + json.name + ' -p ' + PORTA + ' ' + json.name + ':' + json.version
+        sh 'docker run -d --name ' + json.name + ' -p ' + PORTA + ' ' + json.name
     }
 
 }
