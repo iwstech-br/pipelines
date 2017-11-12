@@ -37,7 +37,6 @@ node(SLAVE) {
     }        
     
     stage ('Iniciando o Container') {
-        sh 'docker volume create ' + json.name + '-data'
         sh 'docker run -d --name ' + json.name + ' -p ' + PORTA + ':80 ' + json.name
     }
 

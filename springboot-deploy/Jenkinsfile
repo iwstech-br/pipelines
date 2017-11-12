@@ -13,29 +13,30 @@ node() {
     
     stage ('App Build') {
         cleanWs()
-        build job: '/servicos/springboot_build_deploy_nexus', parameters: [
-            string(name: 'GITURL', value: String.valueOf(GITURL)), 
-            string(name: 'GITBRANCH', value: String.valueOf(BRANCH))
-        ]
+        sh 'mvn clean package -DskipTests'
     }
 
     stage ('Docker Build') {
-        build job: '/servicos/springboot_build_docker_image', parameters: [
-            string(name: 'GROUPID', value: String.valueOf(pom.groupId)),
-            string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
-            string(name: 'VERSION', value: String.valueOf(pom.version))
-            
-        ]
+         sh 'docker build --build-arg BINARY_FILE=target/' + pom.artifactId + '.jar -t ' + pom.artifactId + ' .'
     }
     
-    stage ('Docker Run') {
+    stage ('Interrompendo o Container') {
+        sh 'docker ps > result'
+        def result = readFile('result').trim()
+        if(result.contains(pom.artifactId)) {
+            sh 'docker stop ' + pom.artifactId
+        }
+        
+        sh 'docker ps -a > result'
+        result = readFile('result').trim()
+        if(result.contains(pom.artifactId)) {
+            sh 'docker rm ' + pom.artifactId
+        }
+    }        
     
-        build job: '/servicos/docker_start_container', parameters: [
-            string(name: 'SLAVE', value: String.valueOf(SLAVE)),
-            string(name: 'ARTIFACTID', value: String.valueOf(pom.artifactId)),
-            string(name: 'VERSION', value: String.valueOf(pom.version)),
-            string(name: 'PORTA', value: String.valueOf(PORTA))
-        ] 
+    stage ('Iniciando o Container') {
+        sh 'docker volume create ' + pom.artifactId + '-data'
+        sh 'docker run --name ' + pom.artifactId + ' -p ' + PORTA + ' -e ENVIRONMENT=' + (SLAVE.equals('master') ? 'prod' : 'hom') + ' -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId
     }
 }
 
