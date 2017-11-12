@@ -2,7 +2,7 @@ def SLAVE = AMBIENTE.equals('PRODUCAO') ? 'master' : 'hom01'
 def BRANCH = AMBIENTE.equals('PRODUCAO') ? 'master' : 'develop'
 def pom = null
 
-node() {
+node(SLAVE) {
 
     def mvn = tool 'MVN-3.3.9'
     
