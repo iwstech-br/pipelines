@@ -7,12 +7,12 @@ node() {
     def mvn = tool 'MVN-3.3.9'
     
     stage ('Preparando') {
+        cleanWs()
         git branch: String.valueOf(BRANCH), credentialsId: 'GITLAB', url: '${GITURL}'
         pom = readMavenPom file: 'pom.xml'
     }
     
     stage ('App Build') {
-        cleanWs()
         sh 'mvn clean package -DskipTests'
     }
 
