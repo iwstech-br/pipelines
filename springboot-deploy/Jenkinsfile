@@ -13,7 +13,7 @@ node(SLAVE) {
     }
     
     stage ('App Build') {
-        sh 'mvn clean package -DskipTests'
+        sh 'mvn clean package -DskipTests -U'
     }
 
     stage ('Docker Build') {
