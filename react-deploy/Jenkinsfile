@@ -37,7 +37,7 @@ node(SLAVE) {
     }        
     
     stage ('Iniciando o Container') {
-        sh 'docker run -d --name ' + json.name + ' -p ' + PORTA + ':80 ' + json.name
+        sh 'docker run -d --name ' + json.name + ' -p ' + PORTA + ':80 ' + json.name + ':latest'
     }
 
 }
