@@ -1,10 +1,8 @@
-def SLAVE = AMBIENTE.equals('PRODUCAO') ? 'master' : 'hom01'
-def BRANCH = AMBIENTE.equals('PRODUCAO') ? 'master' : 'develop'
 def pom = null
 
 node(SLAVE) {
 
-    def mvn = tool 'MVN-3.3.9'
+    def mvn = tool 'MVN3.3.9'
     
     stage ('Preparando') {
         cleanWs()
@@ -36,7 +34,7 @@ node(SLAVE) {
     
     stage ('Iniciando o Container') {
         sh 'docker volume create ' + pom.artifactId + '-data'
-        sh 'docker run --name ' + pom.artifactId + ' -p ' + PORTA + ':8000 -e ENVIRONMENT=' + (SLAVE.equals('master') ? 'prod' : 'hom') + ' -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':latest'
+        sh 'docker run --name ' + pom.artifactId + ' -p ' + PORTA + ':8000 -e ENVIRONMENT=' + AMBIENTE + ' -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':latest'
     }
 }
 
