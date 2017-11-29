@@ -1,5 +1,3 @@
-def SLAVE = AMBIENTE.equals('PRODUCAO') ? 'master' : 'hom01'
-def BRANCH = AMBIENTE.equals('PRODUCAO') ? 'master' : 'develop'
 def json = null
 
 node(SLAVE) {
@@ -12,8 +10,10 @@ node(SLAVE) {
 
     stage ('App Build') {
         sh 'npm install'
-        if(json.version.contains('-SNAPSHOT')) {
-            sh 'npm run set-beta'
+        if(AMBIENTE.contains('prod')) {
+            sh 'npm run set-prod'
+        } else if(AMBIENTE.contains('hom')) {
+            sh 'npm run set-hom'
         }
         sh 'npm run build'
     }
