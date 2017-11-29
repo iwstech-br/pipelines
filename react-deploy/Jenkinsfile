@@ -2,7 +2,7 @@ def STAGE = AMBIENTE
 def CFG = CONFIGURACAO.contains('PRODUCAO') ? 'set-prod' : 'set-hom'
 def json = null
 
-node(SLAVE) {
+node(STAGE) {
 
     stage ('Preparando') {
         cleanWs()
