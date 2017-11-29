@@ -11,9 +11,9 @@ node(SLAVE) {
     stage ('App Build') {
         sh 'npm install'
         if(AMBIENTE.contains('prod')) {
-            sh 'npm run set-prod'
+            sh 'npm run set-production'
         } else if(AMBIENTE.contains('hom')) {
-            sh 'npm run set-hom'
+            sh 'npm run set-beta'
         }
         sh 'npm run build'
     }
