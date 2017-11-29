@@ -2,8 +2,6 @@ def pom = null
 
 node(SLAVE) {
 
-    def mvn = tool 'MVN3.3.9'
-    
     stage ('Preparando') {
         cleanWs()
         git branch: String.valueOf(BRANCH), credentialsId: 'GITLAB', url: '${GITURL}'
