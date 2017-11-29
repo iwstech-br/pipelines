@@ -1,3 +1,5 @@
+def STAGE = AMBIENTE
+def CFG = CONFIGURACAO.contains('PRODUCAO') ? 'set-production' : 'set-beta'
 def json = null
 
 node(SLAVE) {
@@ -10,11 +12,7 @@ node(SLAVE) {
 
     stage ('App Build') {
         sh 'npm install'
-        if(AMBIENTE.contains('prod')) {
-            sh 'npm run set-production'
-        } else if(AMBIENTE.contains('hom')) {
-            sh 'npm run set-beta'
-        }
+        sh 'npm run ' + CFG
         sh 'npm run build'
     }
 

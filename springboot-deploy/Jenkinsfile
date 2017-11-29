@@ -1,6 +1,9 @@
+def STAGE = AMBIENTE
+def CFG = CONFIGURACAO.contains('PRODUCAO') ? 'prod' : 'hom'
+
 def pom = null
 
-node(SLAVE) {
+node(STAGE) {
 
     stage ('Preparando') {
         cleanWs()
@@ -32,7 +35,7 @@ node(SLAVE) {
     
     stage ('Iniciando o Container') {
         sh 'docker volume create ' + pom.artifactId + '-data'
-        sh 'docker run --name ' + pom.artifactId + ' -p ' + PORTA + ':8000 -e ENVIRONMENT=' + AMBIENTE + ' -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':latest'
+        sh 'docker run --name ' + pom.artifactId + ' -p ' + PORTA + ':8000 -e ENVIRONMENT=' + CFG + ' -v ' + pom.artifactId + '-data:/var/log/java -d ' + pom.artifactId + ':latest'
     }
 }
 
